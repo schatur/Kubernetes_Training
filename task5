@@ -1,5 +1,5 @@
 Monitoring and Visualization
-Let's first get the Helm.
+Let's first get the Helm
 
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 Change the permissions
