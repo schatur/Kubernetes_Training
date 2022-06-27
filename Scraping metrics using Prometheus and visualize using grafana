@@ -1,0 +1,47 @@
+
+To install the Metric-Server, first download this components.yaml file locally using:
+
+wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+Use any editor of your choice to open and modify the components.yaml file:
+
+vim components.yaml
+
+Modify the file in the vim editor (or your choice) and add this under deployment --> containers --> args:
+
+--kubelet-insecure-tls
+
+Press ESCAPE key and then type :wq to write and quit. Then press ENTER.
+
+Prometheus, kube-state-metrics, Metrics Server, Grafana Example
+Run kubectl crea
+
+
+
+te namespace monitoring to create a monitoring namespace.
+
+Run kubectl create -f ./ -R to get kube-state-metrics, Grafana, and Prometheus resources in place.
+
+Check NODEIP using:
+
+kubectl get nodes --selector=kubernetes.io/role!=master -o jsonpath={.items[*].status.addresses[?\(@.type==\"InternalIP\"\)].address}
+
+Visit http://[NODEIP]:30000 to view Prometheus.
+
+Click on Graph. Select a metric from the drop-down (next to the Execute button) and then click Execute. You can switch between the Graph view and Console view.
+
+
+
+Grafana Dashboard
+Visit http://[NODEIP]:32000 to view the Grafana dashboard.
+Login with admin and admin for the username and password. You can reset the password on the next screen or click Skip.
+On the Welcome to Grafana page click on the + sidebar icon in the upper-left corner of the screen.
+Click the drop-down item named imports from the available options.
+Enter an ID value of 10000 into the Grafana.com Dashboard textbox and click Load. This will load the Cluster Monitoring for Kubernetes dashboard.
+Note: You can find a list of pre-configured dashboards at https://grafana.com/grafana/dashboards. Each one will have an id you can copy into the Grafana Import dashboard screen.
+
+On the next screen you'll see a Select a Prometheus data source drop-down. Select prometheus from the list and click Import. Your dashboard will now load.
+Click on the Cluster Monitoring for Kubernetes drop-down in the uppper-left corner of the screen. Go back through the steps to import a dashboard but this time enter an ID of 8588. This will load the Kubernetes Deployment Statefulset Daemonset metrics dashboard.
+If you click on the dashboard name drop-down in the upper-left corner of the screen you'll see both of your dashboards listed and can now switch between them.
+Import the dashboard with an ID of 10694. This dashboard is called Container Statistics.
+From here you can load other dashboards or create your own!
