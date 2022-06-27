@@ -1,0 +1,24 @@
+Monitoring Kubernetes Cluster using Prometheus and Grafana hands-on project. We will accomplish it by completing each task in the project:
+
+Task 1: To create a single node kubernetes cluster using kind which is a tool for running local Kubernetes clusters using Docker containers as nodes on Ubuntu OS cloud workspace.
+
+Cluster Creation Steps
+Step#1: First we will create a cluster using:
+
+kind create cluster
+
+Step#2: Check cluster
+
+kind get clusters
+
+Step#3: Get cluster info
+
+kubectl cluster-info
+
+Step#5: Check Nodes
+
+kubectl get nodes
+
+Step#6: Check All
+
+kubectl get all -A
