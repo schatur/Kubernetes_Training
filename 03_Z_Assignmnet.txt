@@ -1,0 +1,106 @@
+Learning Objectives:-
+Create a yaml file containing the pod spec for the nginx pod.
+Create the pod.
+
+
+Your company is getting ready to launch a new website, and they need you to set up an nginx web server in their Kubernetes cluster. The nginx server will need to be accessible via network in the future, so you will need to expose port 80 as a containerPort for the nginx container. Your team has also asked you to ensure that nginx runs in quiet mode for the time being to cut down on unnecessary log output. You can do this by setting the command to nginx and passing the following arg to the container: -g daemon off; -q. As this nginx server belongs to the Web team, you will need to create it in the team's web namespace.
+
+To summarize:
+
+Use the nginx container image.
+The container needs a containerPort of 80.
+Set the command to nginx
+Pass in the -g daemon off; -q args to run nginx in quiet mode.
+Create the pod in the web namespace.
+Once the pod is created, you should be able to find it with kubectl get pods -n web. Once the pod is created, you can get more information about its current status with kubectl describe pod nginx -n web.
+
+
+
+------------------------------------------------------------>
+
+master $ kubectl create ns web
+namespace/web created
+master $  vi nginx.yml
+
+
+master $ kubectl create -f nginx.yml -n web
+pod/nginx-pod created
+master $ kubectl get po
+No resources found in default namespace.
+master $ kubectl get pod
+No resources found in default namespace.
+master $ kubectl get pod -n web
+NAME        READY   STATUS    RESTARTS   AGE
+nginx-pod   1/1     Running   0          62s
+master $ kubectl describe pod nginx-pod -n web
+Name:         nginx-pod
+Namespace:    web
+Priority:     0
+Node:         node01/172.17.0.75
+Start Time:   Wed, 22 Jul 2020 09:07:56 +0000
+Labels:       app=nginx-app
+Annotations:  <none>
+Status:       Running
+IP:           10.244.1.3
+IPs:
+  IP:  10.244.1.3
+Containers:
+  nginx-ctr:
+    Container ID:  docker://2fe7a19014b8d5963706c6dce10b4b8f7997e6b11f1bcfa02f69eddc76e1a42a
+    Image:         nginx:latest
+    Image ID:      docker-pullable://nginx@sha256:b08e285dcfbd47001dd88d7a5c6d1fbce0afabe3c7c8abe8f3976fa79cdbb2bd
+    Port:          8080/TCP
+    Host Port:     0/TCP
+    Command:
+      nginx
+      -g
+      daemon off;
+      -q
+    State:          Running
+      Started:      Wed, 22 Jul 2020 09:08:15 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-cm6cc (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  default-token-cm6cc:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-cm6cc
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  2m30s  default-scheduler  Successfully assigned web/nginx-pod to node01
+  Normal  Pulling    2m27s  kubelet, node01    Pulling image "nginx:latest"
+  Normal  Pulled     2m13s  kubelet, node01    Successfully pulled image "nginx:latest"
+  Normal  Created    2m12s  kubelet, node01    Created container nginx-ctr
+  Normal  Started    2m12s  kubelet, node01    Started container nginx-ctr
+master $
+
+
+master $ cat nginx.yml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: nginx-pod
+ labels:
+  app: nginx-app
+spec:
+ containers:
+ - name: nginx-ctr
+   image: nginx:latest
+   command: ["nginx","-g","daemon off;","-q"]
+   ports:
+   - containerPort: 8080
+   
