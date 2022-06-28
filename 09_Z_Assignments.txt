@@ -1,176 +1,135 @@
-Learning Objectives:-
-Create a ConfigMap containing the configuration for the HAProxy ambassador.
-Create a multi-container pod which provides access to the legacy service on port 80
+=========== Manual install
+Create minimum 2 EC2 instance each with4
 
-Problem Statement:-
-Your supermarket company is in the process of moving their infrastructure to a Kubernetes platform in the cloud. This is sometimes challenging, because some of the older, legacy portions of that infrastructure have non-standard requirements. One of these legacy applications is a web service that provides a list of the various types of fruit the company sells in its stores.
+apt-get update && apt-get install -y apt-transport-https
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+apt-get update
 
-This service has already been packaged into a container image, but there is one special requirement: The legacy app is hard-coded to only serve content on port 8775, but the team wants to be able to access the service using the standard port 80. Your task is to build a Kubernetes pod that runs this legacy container and uses the ambassador design pattern to expose access to the service on port 80.
+apt-get install -y docker.io kubeadm kubectl kubelet kubernetes-cni
 
-This setup will need to meet the following specifications:-
+kubeadm init 
 
-1. The pod should have the name fruit-service.
-2. The fruit-service pod should have a container that runs the legacy fruit service image: linuxacademycontent/legacy-fruit-service:1.
-3. The fruit-service pod should have an ambassador container that runs the haproxy:1.7 image and proxies incoming traffic on port 80 to the legacy service on port 8775 (the HAProxy configuration for this is provided below).
-4. Port 80 should be exposed as a containerPort. Note that you do not need to expose port 8775.
-5. The HAProxy configuration should be stored in a ConfigMap called fruit-service-ambassador-config.
-6. The HAProxy config should be provided to the ambassador container using a volume mount that places the data from the ConfigMap in a file at /usr/local/etc/haproxy/haproxy.cfg.
-7. haproxy.cfg should contain the following configuration data:-
-
-global
-    daemon
-    maxconn 256
-
-defaults
-    mode http
-    timeout connect 5000ms
-    timeout client 50000ms
-    timeout server 50000ms
-
-listen http-in
-    bind *:80
-    server server1 127.0.0.1:8775 maxconn 32
+Read the last few lines of logs from above command, it will tell you how to add a node to the cluster, making the current node as master.
 
 
-Once your pod is up and running, it's a good idea to test it to make sure you can access the service from within the cluster using port 80. In order to do this, you can create a busybox pod in the cluster, and then run a command to attempt to access the service from within the busybox pod.
-
-
-Create a descriptor for the busybox pod called busybox.yml.
-
-apiVersion: v1
-kind: Pod
-metadata:
-  name: busybox
-spec:
-  containers:
-  - name: myapp-container
-    image: radial/busyboxplus:curl
-    command: ['sh', '-c', 'while true; do sleep 3600; done']
-
-
-Create the busybox testing pod.
-
-kubectl apply -f busybox.yml
-Use this command to access fruit-service using port 80 from within the busybox pod.
-
-kubectl exec busybox -- curl $(kubectl get pod fruit-service -o=custom-columns=IP:.status.podIP --no-headers):80
-If the service is working, you should see some JSON listing various types of fruit.
-
-SOLUTION:
-
-mkdir -p /usr/local/etc/haproxy
-cd /usr/local/etc/haproxy
-vi haproxy.cfg
-
-global
-    daemon
-    maxconn 256
-
-defaults
-    mode http
-    timeout connect 5000ms
-    timeout client 50000ms
-    timeout server 50000ms
-
-listen http-in
-    bind *:80
-    server server1 127.0.0.1:8775 maxconn 32
-    
-
-
-vi fruit-service-ambassador-config.yml
-
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: fruit-service-ambassador-config
-  namespace: default
-data:
-  config: |
-    global
-        daemon
-        maxconn 256
-
-    defaults
-        mode http
-        timeout connect 5000ms
-        timeout client 50000ms
-        timeout server 50000ms
-
-    listen http-in
-        bind *:80
-        server server1 127.0.0.1:8775 maxconn 32
-
-
- kubectl create -f fruit-service-ambassador-config.yml
-    configmap/fruit-service-ambassador-config created
-	
-
-
-vi fruit-service.yml
-
-apiVersion: v1
-kind: Pod
-metadata:
-  name: fruit-service
-  labels:
-    app: my-app
-spec:
-  containers:
-  - name: legacy-fruit-service
-    image: linuxacademycontent/legacy-fruit-service:1
-  - name: haproxy
-    image: haproxy:1.7
-    command: ["sh","-c","while true; do sleep 30; done;"]
-    ports:
-    - containerPort: 80
-    volumeMounts:
-    - name: config-volume
-      mountPath: /usr/local/etc/haproxy
-  volumes:
-    - name: config-volume
-      configMap:
-        name: fruit-service-ambassador-config
-        items:
-        - key: config
-          path: haproxy.cfg
-  restartPolicy: Never
-  
- master $ kubectl create -f fruit-service.yml
-  pod/fruit-service created
-  
-
-master $ kubectl exec fruit-service -c haproxy -- cat /usr/local/etc/haproxy/haproxy.cfg
-
-global
-    daemon
-    maxconn 256
-    ---
-    ---
-    
-
-
-vi busybox.yml
-
-apiVersion: v1
-kind: Pod
-metadata:
-  name: busybox
-spec:
-  containers:
-  - name: myapp-container
-    image: radial/busyboxplus:curl
-    command: ['sh', '-c', 'while true; do sleep 3600; done']
-    
- master $ kubectl apply -f busybox.yml
-pod/busybox created
+sudo cp /etc/kubernetes/admin.conf $HOME/
+sudo chown $(id -u):$(id -g) $HOME/
+export KUBECONFIG=$HOME/admin.conf
 
 
 
-master $ kubectl exec busybox -- curl $(kubectl get pod fruit-service -o=custom-columns=IP:.status.podIP --no-headers):80
+for kubernetes 1.13:-
+kubectl apply --filename https://git.io/weave-kube-1.6
+
+for kubernetes 1.16:-
+kubectl apply -f https://raw.githubusercontent.com/weaveworks/weave/master/prog/weave-kube/weave-daemonset-k8s-1.9.yaml
+
+OR 
+for version independent:-
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')&env.WEAVE_MTU=1337"
 
 
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 10.40.0.1 port 80: Connection refused
-command terminated with exit code 7
+Now, from master node, fire below command:-
+kubectl get nodes
+
+kubectl get pods --all-namespaces
+
+kubectl get nodes
+
+
+You will Output similar to below, Note that Status must be in Ready:-
+
+NAME                            STATUS   ROLES    AGE     VERSION
+satyensingh1c.mylabserver.com   Ready    <none>   4d19h   v1.13.4
+satyensingh2c.mylabserver.com   Ready    master   4d19h   v1.13.4
+satyensingh3c.mylabserver.com   Ready    <none>   4d19h   v1.13.4
+
+
+Tokens are useful for only 24 hours from its creation.
+Inorder to join a node after that you may again need a join token command:-
+
+kubeadm token create --print-join-command
+kubeadm token create
+
+
+
+===========  Installing Minikube on Mac
+brew install kubectl
+kubectl version --client
+brew cask install minikube
+brew install docker-machine-driver-xhyve
+sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+minikube start --vm-driver=xhyve
+kubectl config current-context
+kubectl get nodes
+minikube stop
+minikube delete
+minikube start --vm-driver=xhyve --kubernetes-version="v1.6.0"
+kubectl get nodes
+
+=========== Installing Minikube on Windows 10
+# Get the kubectl.exe binary from this URL and copy it into your %PATH%
+https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/windows/amd64/kubectl.exe
+
+# Get the Minikube installer from GitHub
+https://github.com/kubernetes/minikube/releases
+Run the installer
+
+
+minikube version
+minikube start --vm-driver=hyperv --kubernetes-version="v1.6.0"
+
+kubectl get nodes
+
+minikube
+minikube dhasboard
+
+
+
+===========M4-04  K8s on AWS using kops
+dig NS k8s.tech-force-one.com
+
+# Install kubectl on Mac
+brew isntall kubectl
+
+# Install latest release of kubectl on Linux
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+sudo mv ./kubectl /usr/local/bin/kubectl
+kubectl
+
+
+#Install "kops" on Linux
+curl -LO https://github.com/kubernetes/kops/releases/download/1.5.3/kops-linux-amd64
+chmod +x kops-linux-amd64
+mv kops-linux-amd64 /usr/local/bin/kops
+
+
+# Install and configure the AWS CLI on Linux     
+sudo apt-get install awscli
+aws configure
+
+# Create and then list a new S3 bucket
+aws s3 mb s3://cluster-1.k8s.tech-force-one.com
+aws s3 ls | grep k8s
+
+export KOPS_STATE_STORE=s3://cluster-1.k8s.tech-force-one.com    
+cp ~/.ssh/authorized_keys ~/.ssh/id_rsa.pub
+
+kops create cluster \
+ --cloud=aws --zones=eu-west-1 \
+ --dns-zone=k8s.tech-force-one.com \
+ --name cluster-1.k8s.tech-force-one.com  --yes
+
+ 
+kops validate cluster
+
+kubectl get nodes
+
+kops delete cluster --name=cluster-1.k8s.tech-force-one.com --yes
+
+
