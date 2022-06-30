@@ -1,0 +1,8 @@
+What is Helm?
+Helm is a package manager for Kubernetes. Helm is the K8s equivalent of yum or apt. Helm deploys charts, which you can think of as a packaged application. It is a collection of all your versioned, pre-configured application resources which can be deployed as one unit. You can then deploy another version of the chart with a different set of configuration.
+
+Helm helps in three key ways:
+
+Improves productivity
+Reduces the complexity of deployments of microservices
+Enables the adaptation of cloud native applications
