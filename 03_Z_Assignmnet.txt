@@ -1,6 +1,6 @@
 Learning Objectives:-
 Create a yaml file containing the pod spec for the nginx pod.
-Create the pod.
+Create the pod.gaha
 
 
 
