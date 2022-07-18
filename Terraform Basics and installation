@@ -4,7 +4,7 @@ Terraform supports multiple platforms - AWS, GCP, Azure etc.
 Terraform has a simple language and a fast learning curve. The syntax is easy to read and understand.
 Terraform is easy to integrate with configuration management tools like Ansible.
 It is easily extensible with plugins. 
-It is free
+It is free.
 
 
 https://www.zero2devops.com/blog/ultimate-guide-to-terraform
